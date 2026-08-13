@@ -3,6 +3,7 @@
 #PLANTEO DEL PROBLEMA: Accesibilidad a Servicios Básicos en Hogares Montevideanos desde una Perspectiva Espacial
 
 1. Contexto y Relevancia
+
 La calidad de vida en zonas urbanas está directamente vinculada a la proximidad y acceso a servicios básicos esenciales. En Montevideo, la distribución desigual de hospitales, transporte público y escuelas genera disparidades territoriales que afectan a los hogares de manera diferenciada según su ubicación geográfica. Comprender estas distancias es fundamental para identificar áreas con déficit de servicios y orientar políticas de planificación urbana.
     
 2. Pregunta Central de Investigación
