@@ -35,3 +35,45 @@ Suponemos que existen zonas de Montevideo, particularmente en áreas periférica
 •	Cobertura: Cantidad de servicios disponibles por radio de distancia
 
 •	Zona: Identificación de áreas geográficas o barrios
+
+## Estructura del repositorio
+
+```
+datos-espaciales/
+├── datos/
+│   ├── crudos/        # datos originales, no se editan
+│   │   ├── municipios/    # sig_municipios.shp, poblacion_municipios.xlsx
+│   │   ├── poblacion/     # edades, socioeconomía, movilidad, población educativa, cobertura de salud
+│   │   ├── salud/         # policlínicas, uptu_salud.csv
+│   │   ├── educacion/     # uptu_educacion.csv
+│   │   └── transporte/    # paradas, líneas y horarios del STM
+│   └── procesados/    # capas armadas a partir de los crudos (GeoPackage)
+├── notebooks/         # proyecto_cdd.ipynb (análisis principal)
+├── scripts/
+│   └── transporte/    # accesibilidad y necesidad vs. oferta de transporte
+├── salidas/
+│   ├── figuras/       # gráficos por tema (salud, educacion, transporte)
+│   ├── mapas/         # mapas HTML (no se suben, se regeneran con el notebook)
+│   └── tablas/        # CSV generados por los scripts
+└── docs/              # bitácora, decisiones y material de referencia
+```
+
+Instalar dependencias:
+
+```bash
+pip install -r requirements.txt
+```
+
+### Datos que hay que descargar aparte
+
+`datos/crudos/transporte/uptu_pasada_variante.csv` (~61 MB, horarios de ómnibus por parada) no está en el repositorio por su tamaño. Descargarlo del [Catálogo de Datos Abiertos](https://catalogodatos.gub.uy/) (Intendencia de Montevideo, horarios del transporte urbano por parada) y guardarlo en esa carpeta.
+
+### Orden de ejecución (transporte)
+
+```bash
+python scripts/transporte/accesibilidad_transporte.py
+```
+
+```bash
+python scripts/transporte/necesidad_vs_oferta_transporte.py
+```

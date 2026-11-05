@@ -17,13 +17,13 @@
 #                                   dependiente (niños + adultos mayores)
 #
 # Datos (clave "municipio" = A, B, C, CH, ...):
-#   - transporte/outputs/accesibilidad_por_municipio.csv  (la oferta ya calculada)
-#   - Info sobre población/edades.csv         (población por edad)
-#   - Info sobre población/socioeconomia.csv  (pobreza, empleo)
-#   - Info sobre población/movilidad.csv      (dónde trabaja/estudia la gente)
-#   - transporte/raw/sig_municipios.shp       (polígonos, para los mapas)
+#   - salidas/tablas/accesibilidad_por_municipio.csv  (la oferta ya calculada)
+#   - datos/crudos/poblacion/edades.csv          (población por edad)
+#   - datos/crudos/poblacion/socioeconomia.csv   (pobreza, empleo)
+#   - datos/crudos/poblacion/movilidad.csv       (dónde trabaja/estudia la gente)
+#   - datos/crudos/municipios/sig_municipios.shp (polígonos, para los mapas)
 #
-# Se ejecuta desde la raíz del repositorio (corré antes accesibilidad_transporte.py).
+# Corré antes scripts/transporte/accesibilidad_transporte.py (genera la oferta).
 # =============================================================================
 #%%
 from pathlib import Path
@@ -34,11 +34,15 @@ import matplotlib.pyplot as plt
 import geopandas as gpd
 
 # --- Rutas relativas ---------------------------------------------------------
-POB    = Path("Info sobre población")
-OFERTA = Path("transporte") / "outputs" / "accesibilidad_por_municipio.csv"
-RAW    = Path("transporte") / "raw"
-SALIDA = Path("transporte") / "outputs"
-SALIDA.mkdir(parents=True, exist_ok=True)
+# La raíz del repo se calcula desde este archivo, así corre desde cualquier carpeta
+RAIZ = Path(__file__).resolve().parents[2] if "__file__" in globals() else Path.cwd()
+POB     = RAIZ / "datos" / "crudos" / "poblacion"
+MUNI    = RAIZ / "datos" / "crudos" / "municipios"
+FIGURAS = RAIZ / "salidas" / "figuras" / "transporte"
+TABLAS  = RAIZ / "salidas" / "tablas"
+OFERTA  = TABLAS / "accesibilidad_por_municipio.csv"
+FIGURAS.mkdir(parents=True, exist_ok=True)
+TABLAS.mkdir(parents=True, exist_ok=True)
 
 CRS_METROS = 32721
 
@@ -55,7 +59,7 @@ def estetica(ax):
 # =============================================================================
 if not OFERTA.exists():
     raise FileNotFoundError(
-        "No encuentro la oferta. Corré primero transporte/accesibilidad_transporte.py")
+        "No encuentro la oferta. Corré primero scripts/transporte/accesibilidad_transporte.py")
 oferta = pd.read_csv(OFERTA)
 oferta["municipio"] = oferta["muni"].str.replace("Municipio ", "", regex=False).str.strip()
 
@@ -137,7 +141,7 @@ print("\n=== Oferta de transporte frente a necesidad socioeconómica ===")
 print(cruce[cols].to_string(index=False, float_format=lambda x: f"{x:,.1f}"))
 print(f"\nCorrelación oferta–necesidad: r = {r:.2f}")
 print("(positiva: la oferta acompaña a la necesidad; NEGATIVA: va al revés = inequidad)")
-cruce[cols].to_csv(SALIDA / "cruce_oferta_necesidad.csv",
+cruce[cols].to_csv(TABLAS / "cruce_oferta_necesidad.csv",
                    index=False, encoding="utf-8-sig")
 
 # =============================================================================
@@ -163,7 +167,7 @@ plt.colorbar(sc, ax=ax, shrink=0.6, label="Brecha (oferta − necesidad)")
 ax.legend(loc="lower right")
 estetica(ax)
 fig.tight_layout()
-fig.savefig(SALIDA / "oferta_vs_necesidad.png", dpi=150, bbox_inches="tight")
+fig.savefig(FIGURAS / "oferta_vs_necesidad.png", dpi=150, bbox_inches="tight")
 
 # =============================================================================
 # 7. Gráfico 2: la brecha, municipio por municipio
@@ -176,7 +180,7 @@ ax.set(xlabel="Brecha = oferta − necesidad",
        title="Municipios sub-atendidos (rojo) y sobre-atendidos (azul)")
 estetica(ax)
 fig2.tight_layout()
-fig2.savefig(SALIDA / "brecha_oferta_necesidad.png", dpi=150, bbox_inches="tight")
+fig2.savefig(FIGURAS / "brecha_oferta_necesidad.png", dpi=150, bbox_inches="tight")
 
 # =============================================================================
 # 8. Gráfico 3: frecuencia vs pobreza (¿el "mejor" servicio va a los más pobres?)
@@ -193,12 +197,12 @@ ax.set(xlabel="Pobreza (% de personas)",
        title="¿El servicio más frecuente va a los municipios más pobres?")
 estetica(ax)
 fig3.tight_layout()
-fig3.savefig(SALIDA / "frecuencia_vs_pobreza.png", dpi=150, bbox_inches="tight")
+fig3.savefig(FIGURAS / "frecuencia_vs_pobreza.png", dpi=150, bbox_inches="tight")
 
 # =============================================================================
 # 9. Mapa de equidad: dónde falta transporte respecto de la necesidad
 # =============================================================================
-municipios = gpd.read_file(RAW / "sig_municipios.shp").to_crs(CRS_METROS)
+municipios = gpd.read_file(MUNI / "sig_municipios.shp").to_crs(CRS_METROS)
 municipios["municipio"] = municipios["MUNICIPIO"].astype(str).str.strip()
 muni_geo = municipios.merge(cruce, on="municipio")
 
@@ -215,10 +219,10 @@ ax.set_title("Mapa de equidad del transporte\n"
              "rojo: mucha necesidad y poca oferta  ·  azul: al revés")
 ax.set_axis_off()
 fig4.tight_layout()
-fig4.savefig(SALIDA / "mapa_equidad_transporte.png", dpi=150, bbox_inches="tight")
+fig4.savefig(FIGURAS / "mapa_equidad_transporte.png", dpi=150, bbox_inches="tight")
 
 plt.show()
-print(f"\nListo. Tabla y gráficos guardados en: {SALIDA.resolve()}")
+print(f"\nListo. Gráficos en {FIGURAS}, tabla en {TABLAS}")
 # =============================================================================
 # Lectura: la correlación negativa NO es un error: medimos NECESIDAD, no demanda
 # efectiva. Dice que la oferta (más paradas, más cobertura y ómnibus más seguido)

@@ -23,7 +23,7 @@
 # donde pasa un bus cada hora no es lo mismo que una donde pasa cada 5 minutos.
 #
 # Todo en UTM 21S (EPSG:32721), o sea en metros: medimos distancias y áreas
-# directo. Se ejecuta desde la raíz del repositorio.
+# directo. Se puede ejecutar desde cualquier carpeta.
 # Instalación (una sola vez):  pip install geopandas pandas matplotlib
 # =============================================================================
 #%%
@@ -35,9 +35,14 @@ import matplotlib.pyplot as plt
 import geopandas as gpd
 
 # --- Rutas relativas ---------------------------------------------------------
-RAW    = Path("transporte") / "raw"
-SALIDA = Path("transporte") / "outputs"
-SALIDA.mkdir(parents=True, exist_ok=True)
+# La raíz del repo se calcula desde este archivo, así corre desde cualquier carpeta
+RAIZ = Path(__file__).resolve().parents[2] if "__file__" in globals() else Path.cwd()
+MUNI    = RAIZ / "datos" / "crudos" / "municipios"
+TRANSP  = RAIZ / "datos" / "crudos" / "transporte"
+FIGURAS = RAIZ / "salidas" / "figuras" / "transporte"
+TABLAS  = RAIZ / "salidas" / "tablas"
+FIGURAS.mkdir(parents=True, exist_ok=True)
+TABLAS.mkdir(parents=True, exist_ok=True)
 
 RADIO_CAMINABLE = 300          # metros: "a 3 cuadras" de una parada
 CRS_METROS = 32721             # UTM 21S: coordenadas en metros
@@ -51,9 +56,9 @@ def estetica(ax):
 # =============================================================================
 # 1. Carga de los archivos espaciales
 # =============================================================================
-municipios = gpd.read_file(RAW / "sig_municipios.shp").to_crs(CRS_METROS)
-paradas    = gpd.read_file(RAW / "v_uptu_paradas.shp").to_crs(CRS_METROS)
-lineas     = gpd.read_file(RAW / "v_uptu_lsv.shp").to_crs(CRS_METROS)
+municipios = gpd.read_file(MUNI / "sig_municipios.shp").to_crs(CRS_METROS)
+paradas    = gpd.read_file(TRANSP / "v_uptu_paradas.shp").to_crs(CRS_METROS)
+lineas     = gpd.read_file(TRANSP / "v_uptu_lsv.shp").to_crs(CRS_METROS)
 
 # Geometrías válidas y sin vacíos (si no, los recortes fallan).
 municipios["geometry"] = municipios.geometry.buffer(0)
@@ -88,7 +93,7 @@ resumen_paradas = (paradas_en_muni.groupby("muni")
 # El archivo de horarios trae una fila por cada pasada (un ómnibus pasando por
 # una parada a una hora). Contamos cuántas pasan por cada parada en el tramo
 # pico (7-9 h) de un día hábil y lo pasamos a ómnibus por hora.
-pasadas = pd.read_csv(RAW / "uptu_pasada_variante.csv", sep=";",
+pasadas = pd.read_csv(TRANSP / "uptu_pasada_variante.csv", sep=";",
                       usecols=["tipo_dia", "cod_ubic_parada", "hora"])
 
 pico = pasadas[(pasadas["tipo_dia"] == TIPO_DIA_HABIL) &
@@ -155,7 +160,7 @@ cols = ["muni", "area_km2", "n_paradas", "paradas_km2", "n_lineas",
         "indice_accesibilidad"]
 print("\n=== Accesibilidad al transporte por municipio ===")
 print(tabla[cols].to_string(index=False, float_format=lambda x: f"{x:,.1f}"))
-tabla[cols].to_csv(SALIDA / "accesibilidad_por_municipio.csv",
+tabla[cols].to_csv(TABLAS / "accesibilidad_por_municipio.csv",
                    index=False, encoding="utf-8-sig")
 
 # =============================================================================
@@ -184,7 +189,7 @@ mapa(axes[2], "indice_accesibilidad", "Índice de accesibilidad",
 fig.suptitle("Accesibilidad al transporte público por municipio — Montevideo",
              fontsize=15)
 fig.tight_layout()
-fig.savefig(SALIDA / "mapas_accesibilidad.png", dpi=150, bbox_inches="tight")
+fig.savefig(FIGURAS / "mapas_accesibilidad.png", dpi=150, bbox_inches="tight")
 
 # Mapa de contexto: paradas y recorridos sobre los municipios
 fig2, ax = plt.subplots(figsize=(9, 9))
@@ -194,7 +199,7 @@ paradas_unicas.plot(ax=ax, color="tab:red", markersize=1, alpha=0.5)
 ax.set_title("Paradas (rojo) y recorridos de líneas (azul) sobre los municipios")
 estetica(ax)
 fig2.tight_layout()
-fig2.savefig(SALIDA / "mapa_paradas_y_lineas.png", dpi=150, bbox_inches="tight")
+fig2.savefig(FIGURAS / "mapa_paradas_y_lineas.png", dpi=150, bbox_inches="tight")
 
 # =============================================================================
 # 9. Ranking en barras
@@ -208,10 +213,10 @@ ax.grid(axis="x", alpha=0.3)
 for lado in ("top", "right"):
     ax.spines[lado].set_visible(False)
 fig3.tight_layout()
-fig3.savefig(SALIDA / "ranking_accesibilidad.png", dpi=150, bbox_inches="tight")
+fig3.savefig(FIGURAS / "ranking_accesibilidad.png", dpi=150, bbox_inches="tight")
 
 plt.show()
-print(f"\nListo. Mapas y tabla guardados en: {SALIDA.resolve()}")
+print(f"\nListo. Mapas en {FIGURAS}, tabla en {TABLAS}")
 # =============================================================================
 # Lectura: la frecuencia agrega información que la sola presencia de paradas no
 # da: dos municipios pueden tener cobertura parecida pero muy distinto nivel de
