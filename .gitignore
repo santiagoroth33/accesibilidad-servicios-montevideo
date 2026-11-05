@@ -29,6 +29,3 @@ datos/crudos/transporte/uptu_pasada_variante.csv
 
 # Salidas pesadas que se regeneran con el notebook
 salidas/mapas/*.html
-
-# Configuración local de Claude Code
-.claude/settings.local.json
